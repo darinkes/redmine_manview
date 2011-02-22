@@ -1,0 +1,11 @@
+<h2>Manpage Viewer</h2>
+
+<% form_for @manpage, :url => { :action => "search" } do |f| %>
+  <%= f.label :name, 'Manpage name:' %>
+  <%= f.text_field :name %><br />
+  <%= f.label :category, 'Category:' %> 
+  <%= f.collection_select :category, [ 'any', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], :to_s, :to_s, 
+       :include_blank => false
+  %><br />
+  <%= f.submit 'Search' %>
+<% end %>
