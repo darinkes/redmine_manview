@@ -1,3 +1,5 @@
 # English strings go here for Rails i18n
 en:
-  my_label: "My label"
+  field_man_name: Manpage Name
+  field_man_category: Category
+  field_man_os: Operating System

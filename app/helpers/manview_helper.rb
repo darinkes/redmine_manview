@@ -16,6 +16,9 @@ module ManviewHelper
       line.sub!(/^\.Pp/, '<br><br>')
       line.sub!(/\\&$/, '')
 
+      # escape line to be able to show e.g. include-paths
+      line = CGI::escapeHTML(line)
+
       # aliases
       line.sub!(/^\.Bx/, '<em>BSD</em>')
       line.sub!(/^\.Fx/, '<em>FreeBSD</em>')
@@ -24,16 +27,15 @@ module ManviewHelper
       line.sub!(/^\.Bsx/, '<em>BSDI BSD/OS</em>')
       line.sub!(/^\.At v([0-9\.]+).*/, "<em>Version \\1 AT&T UNIX.</em>")
 
-      #serious stuff
+      # serious stuff
+      # order matters here!
       line.sub!(/^\.Nm\s+(.+)\s*(,)*/, " <b>\\1</b>\\2 ")
-      line.sub!(/^\.Xr\s*([a-zA-Z\.]+)\s*([0-9]+)\s*(,)*/, "<a href=\"search?category=\\2&name=\\1&strict=true\">\\1(\\2)</a>\\3")
+      line.sub!(/^\.Xr\s*([a-zA-Z\.]+)\s*([0-9]+)\s*(,)*/, "<a href=\"search?manview[man_category]=\\2&manview[man_name]=\\1&manview[strict]=true\">\\1(\\2)</a>\\3")
       line.sub!(/^\.Sh\s+(.+)/, "<br><br><b>\\1</b><br>")
       line.sub!(/^\.Nm\s+(.+)/, "<b>\\1</b>")
+      line.sub!(/^\.Nm\s*$/, "<b>#{name}</b>")
       line.sub!(/^\.Cm\s+(.+)/, "<b>\\1</b>")
-      if line =~ /^\.Fd\s+(.+)/
-        line = CGI::escapeHTML(line)
-        line.sub!(/^\.Fd\s+(.+)/, "<b>\\1</b><br>")
-      end
+      line.sub!(/^\.Fd\s+(.+)/, "<b>\\1</b><br>")
       line.sub!(/^\.Pq\s+Ar\s+([a-zA-Z0-9]+)/, " (<u>\\1</u>) ")
       line.sub!(/^\.Pa\s+(.+)/, "<u>\\1</u>")
       line.sub!(/^\.Op\s+Fl\s+(.+)Ar\s+(.+)/, " [<b>-\\1</b><u>\\2</u>]")

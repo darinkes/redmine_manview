@@ -12,16 +12,17 @@ class ManviewController < ApplicationController
 
   # XXX: statt eigenen view in index rendern
   def search
-    search = params[:name]
-    category = params[:category]
+    search = params[:manview][:man_name]
+    category = params[:manview][:man_category]
+    os = params[:manview][:man_os]
 
-    strict = params[:strict] == 'true' ? true : false
+    strict = params[:manview][:strict] == 'true' ? true : false
 
     @found = Array.new
-    record = Struct.new('OpenBSDMan', :name, :title, :category, :text)
+    record = Struct.new('OpenBSDMan', :name, :fullname, :title, :category, :text)
 
-    if search !~ /^[a-zA-Z0-9\.]+$/
-      @found.push record.new("nothing", "nothing", "any", "Invalid search string")
+    if search !~ /^[a-zA-Z0-9\._]+$/
+      @found.push record.new("nothing", "nothing", "nothing", "any", "Invalid search string")
       return
     end
 
@@ -34,24 +35,32 @@ class ManviewController < ApplicationController
           @found.push manpage
         end
       }
+      if @found.empty?
+        db.each { | entry |
+          manpage = Marshal.load(entry[1])
+          if manpage.category == category && (manpage.fullname =~ /.+, #{search}$/ || manpage.fullname =~ /.+, #{search},.+/)
+            @found.push manpage
+          end
+        }
+      end
     elsif (category != 'any')
       db.each { | entry |
         manpage = Marshal.load(entry[1])
-        if manpage.category == category && manpage.name =~ /#{search}/
+        if manpage.category == category && manpage.fullname =~ /#{search}/
           @found.push manpage
         end
       }
     else
       db.each { | entry |
         manpage = Marshal.load(entry[1])
-        if manpage.name =~ /#{search}/
+        if manpage.fullname =~ /#{search}/
           @found.push manpage
         end
       }
     end
 
     if @found.empty?
-       @found.push record.new("nothing", "nothing", "any", "Nothing found for your search request #{search}")
+       @found.push record.new("nothing", "nothing", "nothing", "any", "Nothing found for your search request #{search}")
     end
 
     @multiman = @found.size == 1 ? false : true

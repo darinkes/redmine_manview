@@ -1,11 +1,17 @@
 <h2>Manpage Viewer</h2>
 
-<% form_for @manpage, :url => { :action => "search" } do |f| %>
-  <%= f.label :name, 'Manpage name:' %>
-  <%= f.text_field :name %><br />
-  <%= f.label :category, 'Category:' %> 
-  <%= f.collection_select :category, [ 'any', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], :to_s, :to_s, 
-       :include_blank => false
-  %><br />
-  <%= f.submit 'Search' %>
+<% labelled_tabular_form_for :manview, @manview, :url => { :controller => "manview", :action => "search"}, :html => { :class => nil } do |f| %>
+<div class="box tabular" style="width=100px">
+  <p><%= error_messages_for 'manview' %></p>
+  <p><%= f.text_field :man_name, :required => true %></p>
+  <p><%= f.select :man_category, [ 'any', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], :include_blank => false %></p>
+  <p><%= f.select :man_os, [ 'PhantomBSD', 'OpenBSD 4.5', 'OpenBSD 4.6', 'OpenBSD 4.7', 'OpenBSD 4.8', 'OpenBSD 4.9' ],
+      :include_blank => false %></p>
+  <p><%= f.submit 'Search' %></p>
+</div>
+<% end %>
+
+<% content_for :sidebar do %>
+  <h2>Manpage Viewer</h2>
+  <%= image_tag "RTFM.jpg" %>
 <% end %>

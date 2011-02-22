@@ -6,8 +6,8 @@
   Found more than one manpage for your search-request<br>
   Choose one<br>
   <% @found.each do |element| %>
-    <%= link_to "#{element.name} (#{element.category})", :action => 'search', 
-        :name => element.name, :category => element.category, :strict => true %><br>
+    <%= link_to "#{element.name} (#{element.category})", :action => 'search', :manview => {
+        :man_name => element.name, :man_category => element.category, :strict => true } %><br>
   <% end %>
 <% else %>
   <% @found.each do |element| %>
@@ -19,3 +19,8 @@
 <% end %>
 <br><br>
 <%= link_to "Back to search form", :action => 'index' %>
+
+<% content_for :sidebar do %>
+  <h2>Manpage Viewer</h2>
+  <%= image_tag "RTFM.jpg" %>
+<% end %>
