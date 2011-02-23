@@ -4,13 +4,15 @@
 <br><br>
 <% if @multiman %>
   Found more than one manpage for your search-request<br>
-  Choose one<br>
+  Choose one:<br><br>
   <% @found.each do |element| %>
     <%= link_to "#{element.name} (#{element.category})", :action => 'search', :manview => {
         :man_name => element.name, :man_category => element.category, :strict => true } %><br>
   <% end %>
 <% else %>
   <% @found.each do |element| %>
+     <%= link_to "Link to #{element.name} (#{element.category})", :action => 'search', :manview => {
+         :man_name => element.name, :man_category => element.category, :strict => true } %><br><br>
     <h2><%= "#{element.name} (#{element.category})" %></h2>
     <div style="max-width:60em">
        <%= man_parser(element.text, element.name) %> <br>
