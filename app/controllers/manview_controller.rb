@@ -11,11 +11,11 @@ class ManviewController < ApplicationController
   end
 
   # XXX: statt eigenen view in index rendern
+  # XXX: caching? shasum der DB speichern und gerenderte Seiten cachen.
   def search
     search = params[:manview][:man_name]
     category = params[:manview][:man_category]
     os = params[:manview][:man_os]
-
     strict = params[:manview][:strict] == 'true' ? true : false
 
     @found = Array.new
