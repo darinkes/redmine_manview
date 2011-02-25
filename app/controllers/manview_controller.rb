@@ -8,6 +8,7 @@ class ManviewController < ApplicationController
   # XXX: autocompletion?
   def index
     @manpage = ""
+    @os_selection = [ 'PhantomBSD' ]
   end
 
   # XXX: statt eigenen view in index rendern
@@ -17,12 +18,15 @@ class ManviewController < ApplicationController
     category = params[:manview][:man_category]
     os = params[:manview][:man_os]
     strict = params[:manview][:strict] == 'true' ? true : false
+    @raw = params[:manview][:raw] == 'true' ? true : false
 
     @found = Array.new
     record = Struct.new('OpenBSDMan', :name, :fullname, :title, :category, :text)
 
-    if search !~ /^[a-zA-Z0-9\._]+$/
-      @found.push record.new("nothing", "nothing", "nothing", "any", "Invalid search string")
+    if search !~ /^[a-zA-Z0-9\._-]+$/
+      #@found.push record.new("nothing", "nothing", "nothing", "any", "Invalid search string")
+      flash[:error] = "Invalid search string"
+      redirect_to :action => 'index'
       return
     end
 
@@ -60,7 +64,10 @@ class ManviewController < ApplicationController
     end
 
     if @found.empty?
-       @found.push record.new("nothing", "nothing", "nothing", "any", "Nothing found for your search request #{search}")
+      #@found.push record.new("nothing", "nothing", "nothing", "any", "Nothing found for your search request #{search}")
+      flash[:error] = "Nothing found for your search request #{search}"
+      redirect_to :action => 'index'
+      return
     end
 
     @multiman = @found.size == 1 ? false : true
