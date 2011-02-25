@@ -1,10 +1,32 @@
 module ManviewHelper
 
+  def parse_manhtml(text, name, category)
+    atext = text.split("\n")
+    ntext = Array.new
+    upname = name.upcase
+
+    atext.each do |line|
+      next if line =~ /^<html>|<\/html>|<head>|<\/head>|<body>|<\/body>|<\!--|-->|<meta/ ||
+              line =~ /OpenBSD 4.5 [January|Febuary|March|April|May|June|July|September|October|November|December]+/ ||
+              line =~ /OpenBSD .+ Manual/ ||
+              line =~ /<p><font size=3>#{upname} \( #{category} \)/
+
+      line.sub!(/align=center/, '')
+      line.sub!(/``/, '"')
+      line.gsub!(/<font size=3><tt>([a-zA-Z\.\-_0-9]+)<\/tt><font size=3>\(([0-9]+)\)(,*)/, " <a href=\"search?manview[man_category]=\\2&manview[man_name]=\\1&manview[strict]=true\">\\1(\\2)</a>\\3 ")
+      line.sub!(/width="100%"  rules="none"  frame="none"/, '')
+      ntext << line + "\n"
+    end
+
+    return ntext
+  end
+
   def man_parser(text, name)
 
     atext = text.split("\n")
     ntext = Array.new
     close_tr = false
+    add_tab_br = false
     columns = nil
 
     atext.each_index do | index |
@@ -18,6 +40,8 @@ module ManviewHelper
       line.sub!(/^\.Os/, '')
       line.sub!(/^\.Dv\s*/, '')
       line.sub!(/^\.Li\s*/, '')
+      line.sub!(/^\.TH.*/, '')
+      line.sub!(/^\.\s*$/, '')
       line.sub!(/\\&$/, '')
 
       # escape line to be able to show e.g. include-paths
@@ -36,6 +60,7 @@ module ManviewHelper
       line.sub!(/^\.Pp/, '<br><br>')
       line.sub!(/^\.Xr\s+(.+)\s+([0-9]+)\s*(,)*/, " <a href=\"search?manview[man_category]=\\2&manview[man_name]=\\1&manview[strict]=true\">\\1(\\2)</a>\\3 ")
       line.sub!(/^\.Sh\s+(.+)/, "<br><br><b>\\1</b><br>")
+      line.sub!(/^\.SH\s+(.+)/, "<br><br><b>\\1</b><br>")
       # order matters here!
       line.sub!(/^\.Nm\s+:\s*$/, "<b>#{name}</b>:")
       line.sub!(/^\.Nm\s+(.+)\s*(,)*/, " <b>\\1</b>\\2 ")
@@ -126,6 +151,27 @@ module ManviewHelper
       if !line.sub!(/^\.El\s*/, "</table>").nil?
         columns = nil
       end
+
+      # Debian-Manpage-Tags see dpkg(1)
+
+      # link to man-page
+=begin
+      if line =~ /.+\(\d+\)/
+         line.sub!(/(.+)\s*([0-9]+)\s*(,)*/, " <a href=\"search?manview[man_category]=\\2&manview[man_name]=\\1&manview[strict]=true\">\\1\\2</a>\\3 ")
+      end
+=end
+
+      line.sub!(/^\.SS\s+(.+)/, "<br><br><b>\\1</b><br>")
+      add_tab_br = true  if !line.sub!(/^\.nf/, '').nil?
+      add_tab_br = false if !line.sub!(/^\.fi/, '').nil?
+      line.gsub!(/\\fI(.+)\\fP/, "<u>\\1</u>")
+      line.gsub!(/\\fB(.+)\\fP/, "<b>\\1</b>")
+
+      line = "<pre>\t" + line + "</pre>" if add_tab_br
+
+      # remove escape-char
+      # XXX: uncomment if all debian-tags are parsed
+      # line.gsub!(/\\/, '')
 
       # some cleanup with spaces
       line.sub!(/\s+(\")+/, "\\1")
