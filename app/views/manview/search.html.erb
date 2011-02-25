@@ -1,6 +1,9 @@
 <h2>Manpage Viewer</h2>
 
+<% if !@found.empty? %>
 <%= link_to "Back to search form", :action => 'index' %>
+<% end %>
+
 <br><br>
 <% if @multiman %>
   Found more than one manpage for your search-request<br>
@@ -11,11 +14,21 @@
   <% end %>
 <% else %>
   <% @found.each do |element| %>
-     <%= link_to "Link to #{element.name} (#{element.category})", :action => 'search', :manview => {
-         :man_name => element.name, :man_category => element.category, :strict => true } %><br><br>
     <h2><%= "#{element.name} (#{element.category})" %></h2>
-    <div style="max-width:60em">
-       <%= man_parser(element.text, element.name) %> <br>
+    <div style="max-width:60em; margin-left:5em;">
+      <% if !@raw %>
+        <%= link_to "Link to #{element.name} (#{element.category})", :action => 'search', :manview => {
+            :man_name => element.name, :man_category => element.category, :strict => true } %><br><br>
+        <%= man_parser(element.text, element.name) %> <br><br><br>
+        <%= link_to "Link to manpage source of #{element.name} (#{element.category})", :action => 'search', :manview => {
+            :man_name => element.name, :man_category => element.category, :strict => true, :raw => true } %><br><br>
+      <% else %>
+        <%= link_to "Back to manpage #{element.name} (#{element.category})", :action => 'search', :manview => {
+            :man_name => element.name, :man_category => element.category, :strict => true, :raw => false } %><br><br>
+        <pre>
+<%= CGI::escapeHTML(element.text) %> <br>
+        </pre>
+      <% end %>
     </div>
   <% end %>
 <% end %>
@@ -24,5 +37,7 @@
 
 <% content_for :sidebar do %>
   <h2>Manpage Viewer</h2>
-  <%= image_tag "RTFM.jpg" %>
+  <%= image_tag "RTFM.jpg" %><br><br><br>
+  <b>What is <a href="http://en.wikipedia.org/wiki/RTFM">RFTM?</a></b>
+  <h3>ManView(c) 2011 Stefan Rinkes<h3>
 <% end %>

@@ -5,13 +5,14 @@
   <p><%= error_messages_for 'manview' %></p>
   <p><%= f.text_field :man_name, :required => true %></p>
   <p><%= f.select :man_category, [ 'any', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], :include_blank => false %></p>
-  <p><%= f.select :man_os, [ 'PhantomBSD', 'OpenBSD 4.5', 'OpenBSD 4.6', 'OpenBSD 4.7', 'OpenBSD 4.8', 'OpenBSD 4.9' ],
-      :include_blank => false %></p>
+  <p><%= f.select :man_os, @os_selection, :include_blank => false %></p>
   <p><%= f.submit 'Search' %></p>
 </div>
 <% end %>
 
 <% content_for :sidebar do %>
   <h2>Manpage Viewer</h2>
-  <%= image_tag "RTFM.jpg" %>
+  <%= image_tag "RTFM.jpg" %><br><br><br>
+  <b>What is <a href="http://en.wikipedia.org/wiki/RTFM">RFTM?</a></b>
+  <h3>ManView (c) 2011 Stefan Rinkes<h3>
 <% end %>
