@@ -27,7 +27,13 @@ module ManviewHelper
     ntext = Array.new
     close_tr = false
     add_tab_br = false
+    reference_start = false
+    reference_done = false
     columns = nil
+
+    ref_title = ''
+    ref_date = ''
+    ref_name = ''
 
     atext.each_index do | index |
       line = atext[index].to_s
@@ -83,6 +89,7 @@ module ManviewHelper
       line.sub!(/^\.Cd\s+(.+)/, "<b>\\1</b>")
       line.sub!(/^\.Fd\s+(.+)/, "<b>\\1</b><br>")
       line.sub!(/^\.Ft\s+(.+)/, "<u>\\1</u><br>")
+      line.sub!(/^\.Em\s+(.+)/, " <u>\\1</u> ")
       line.sub!(/^\.Pq\s+Ar\s+(.+)/, " (<u>\\1</u>) ")
       line.sub!(/^\.Pq\s+(.+)/, " (\\1) ")
       line.sub!(/^\.Pq\s+Dq\s+(.+)/, " (\"\\1\") ")
@@ -118,6 +125,22 @@ module ManviewHelper
       line.sub!(/^\.Sq\s+(.+)/, "'\\1'")
       line.sub!(/^\.Bd\s+(.+)/, "<p><PRE>")
       line.sub!(/^\.Ed\s*/, "</PRE></p>")
+
+      # Reference
+      reference_done = true if !line.sub!(/^\.Re\s*/, '').nil?
+      if reference_start && !reference_done
+        ref_title = line if !line.sub!(/^\.%T\s+(.+)/, "\\1").nil?
+        ref_date = line if !line.sub!(/^\.%D\s+(.+)/, "\\1").nil?
+        ref_name = line if !line.sub!(/^\.%R\s+(.+)/, "\\1").nil?
+        line = ''
+      end
+      reference_start = true if !line.sub!(/^\.Rs\s*/, '<br><br>').nil?
+
+      if reference_done
+        line = "<u>#{ref_title}</u>, #{ref_name}, #{ref_date}"
+        reference_start = false
+        reference_done = false
+      end
 
       if !line.sub!(/^\.In\s+(.+)/, "<b>#include &lt;\\1&gt;</b><br>").nil? &&
          atext[index + 1].to_s !~ /^\.In\s+(.+)/
@@ -173,6 +196,7 @@ module ManviewHelper
           !line.sub!(/^\.It\s+Cm\s+(.+)\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b> <u>\\2</u></th><th>").nil? ||
           !line.sub!(/^\.It\s+Cm\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b></th><th>").nil? ||
           !line.sub!(/^\.It\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><u>\\1</u></th><th>").nil? ||
+          !line.sub!(/^\.It\s+Pa\s+(.+)/, "<tr><th valign=\"top\">\\1</th><th>").nil? ||
           !line.sub!(/^\.It\s+Aq\s+Pa\s+(.+)/, "<tr><th valign=\"top\"><u>&lt;\\1&gt;</u></th><th>").nil? ||
           !line.sub!(/^\.It\s+Bq\s+Er\s+(.+)/, "<tr><th valign=\"top\">[\\1]</th><th>").nil? ||
           !line.sub!(/^\.It\s*/, "<tr><th valign=\"top\"></th><th>").nil?
