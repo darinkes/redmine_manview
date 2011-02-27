@@ -10,7 +10,7 @@
   Choose one:<br><br>
   <% @found.each do |element| %>
     <%= link_to "#{element.name} (#{element.category}) - #{element.os}", :action => 'search', :manview => {
-        :man_name => element.name, :man_category => element.category, :strict => true } %><br>
+      :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %><br>
   <% end %>
 <% else %>
   <% @found.each do |element| %>
@@ -18,15 +18,15 @@
     <div style="max-width:60em; margin-left:5em;">
       <% if !@raw %>
         <%= link_to "Link to #{element.name} (#{element.category})", :action => 'search', :manview => {
-            :man_name => element.name, :man_category => element.category, :strict => true } %><br><br>
-        <%= man_parser(element.text, element.name) %> <br><br><br>
+          :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %><br><br>
+        <%= element.text %> <br><br><br>
         <%= link_to "Link to manpage source of #{element.name} (#{element.category})", :action => 'search', :manview => {
-            :man_name => element.name, :man_category => element.category, :strict => true, :raw => true } %><br><br>
+          :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true, :raw => true } %><br><br>
       <% else %>
         <%= link_to "Back to manpage #{element.name} (#{element.category})", :action => 'search', :manview => {
-            :man_name => element.name, :man_category => element.category, :strict => true, :raw => false } %><br><br>
+          :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true, :raw => false } %><br><br>
         <pre>
-<%= CGI::escapeHTML(element.text) %> <br>
+<%= CGI::escapeHTML(element.rawtext) %> <br>
         </pre>
       <% end %>
     </div>
