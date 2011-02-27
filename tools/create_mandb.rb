@@ -1,6 +1,8 @@
 require 'rubygems'
 require 'bdb'
 
+require "open3"
+
 db = BDB::Btree.create('man.db', nil, "w", 0644)
 
 notfound = 0
@@ -20,30 +22,33 @@ File.open("/usr/share/man/whatis.db").each { |line|
   title = array.to_s
 
   data = ''
-  if File.exists?("/tmp/man/man#{category}/#{pure_name.downcase}.#{category}")
-    File.open("/tmp/man/man#{category}/#{pure_name.downcase}.#{category}").each { |line|
-      next if line =~ /<!--/
-      data += line
-    }
-  end 
-  if data.empty?
-    puts "no manpage found for #{name} - #{title}"
-    notfound += 1
-    #exit 1
-  else
-    found += 1
-    puts "found /tmp/man/man#{category}/#{pure_name.downcase}.#{category}"
+  output = ''
+
+  Open3.popen3 "/usr/bin/man -w #{category} #{pure_name}" do |stdin, stdout, stderr|
+    stdin.close
+    output = stdout.read
+  end
+  output_a = output.split(/\n/)
+  puts "for #{pure_name}(#{category}) man said: #{output_a.join(' ')}"
+
+  if !output_a.to_s.empty?
+    output_a.each do |manfile|
+      if File.exists?(manfile)
+        File.open(manfile).each { |line|
+          data += line
+        }
+      else
+        puts "#{manfile} does not exists"
+      end
+      if data.empty?
+        puts "Found #{manfile}, but it is empty"
+        notfound += 1
+      else
+        found += 1
+      end
+    end
   end
 
-=begin
-  datas = Hash.new
-  datas = [
-    'text' => data,
-    'category' => category,
-    'name' => name
-  ]
-  db[pure_name] = datas
-=end
 
   rec = record.new(pure_name, name, title, category, data)
   db[id] = Marshal.dump(rec)
