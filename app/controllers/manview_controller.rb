@@ -13,6 +13,7 @@ class ManviewController < ApplicationController
     @categories = [ 'any', 1, 2, 3, '3p', 4, 5, 6, 7, 8, 9 ]
     @archs = [ 'any', 'i386', 'AMD64']
     @cachesize = CACHE.size
+    @querytime = params[:querytime] || nil
   end
 
   # XXX: statt eigenen view in index rendern
@@ -27,7 +28,7 @@ class ManviewController < ApplicationController
     @raw = params[:manview][:raw] == 'true' ? true : false
 
     @found = Array.new
-    record = Struct.new('OpenBSDMan', :name, :fullname, :title, :category, :text)
+    Struct.new('OpenBSDMan', :name, :fullname, :title, :category, :text)
 
     if search !~ /^[a-zA-Z0-9\._\-:]+$/
       flash[:error] = "Invalid search string"
@@ -40,9 +41,11 @@ class ManviewController < ApplicationController
     db = BDB::Btree.open(FILE, nil, "r")
 
     @found = get_from_cache(query)
-    if !@found.empty?
+
+    if !@found.nil?
       # nothing
     elsif (strict)
+      @found = Array.new
       db.each { | entry |
         manpage = Marshal.load(entry[1])
         next if manpage.category != category
@@ -60,6 +63,7 @@ class ManviewController < ApplicationController
         }
       end
     elsif (category != 'any')
+      @found = Array.new
       db.each { | entry |
         manpage = Marshal.load(entry[1])
         if arch != 'any' && manpage.category =~ /\//
@@ -71,6 +75,7 @@ class ManviewController < ApplicationController
         end
       }
     else
+      @found = Array.new
       db.each { | entry |
         manpage = Marshal.load(entry[1])
         if arch != 'any' && manpage.category =~ /\//
@@ -82,14 +87,15 @@ class ManviewController < ApplicationController
       }
     end
 
-    add2cache(query, @found)
 
     if @found.empty?
-    db.close
       db.close
+      add2cache(query, [])
       flash[:error] = "Nothing found for your search request #{search} #{category} #{arch}"
-      redirect_to :action => 'index'
+      redirect_to :action => 'index', :querytime => Time.now - start
       return
+    else
+      add2cache(query, @found)
     end
 
     @multiman = @found.size == 1 ? false : true
@@ -103,7 +109,7 @@ private
 
   # XXX: clear cache if the shasum of db has changed
   def get_from_cache(query)
-    return CACHE.fetch(query, [])
+    return CACHE.fetch(query, nil)
   end
 
   def add2cache(query, result)

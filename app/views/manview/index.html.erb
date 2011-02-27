@@ -17,4 +17,7 @@
   <b>What is <a href="http://en.wikipedia.org/wiki/RTFM">RFTM?</a></b>
   <h3>ManView (c) 2011 Stefan Rinkes<h3>
   Cache-Size: <%= @cachesize %><br>
+  <% if !@querytime.nil? %>
+    Query-Time: <%= @querytime %><br>
+  <% end %>
 <% end %>
