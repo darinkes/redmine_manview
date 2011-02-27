@@ -4,6 +4,7 @@ class ManviewController < ApplicationController
   require 'bdb'
 
   FILE = '/var/www/redmine/man.db'
+  CACHE = Hash.new
 
   # XXX: autocompletion?
   def index
@@ -11,11 +12,13 @@ class ManviewController < ApplicationController
     @os_selection = [ 'PhantomBSD' ]
     @categories = [ 'any', 1, 2, 3, '3p', 4, 5, 6, 7, 8, 9 ]
     @archs = [ 'any', 'i386', 'AMD64']
+    @cachesize = CACHE.size
   end
 
   # XXX: statt eigenen view in index rendern
-  # XXX: caching? shasum der DB speichern und gerenderte Seiten cachen.
   def search
+    start = Time.now
+
     search = params[:manview][:man_name]
     category = params[:manview][:man_category]
     os = params[:manview][:man_os]
@@ -32,9 +35,14 @@ class ManviewController < ApplicationController
       return
     end
 
+    query ="#{search}-#{category}-#{os}-#{arch}-#{strict}"
+
     db = BDB::Btree.open(FILE, nil, "r")
 
-    if (strict)
+    @found = get_from_cache(query)
+    if !@found.empty?
+      # nothing
+    elsif (strict)
       db.each { | entry |
         manpage = Marshal.load(entry[1])
         next if manpage.category != category
@@ -74,14 +82,36 @@ class ManviewController < ApplicationController
       }
     end
 
+    add2cache(query, @found)
+
     if @found.empty?
+    db.close
+      db.close
       flash[:error] = "Nothing found for your search request #{search} #{category} #{arch}"
       redirect_to :action => 'index'
       return
     end
 
     @multiman = @found.size == 1 ? false : true
+    @cachesize = CACHE.size
+    @querytime = Time.now - start
 
     db.close
   end
+
+private
+
+  # XXX: clear cache if the shasum of db has changed
+  def get_from_cache(query)
+    return CACHE.fetch(query, [])
+  end
+
+  def add2cache(query, result)
+    CACHE.merge!({ query => result })
+  end
+
+  def clear_cache
+    CACHE.clear
+  end
+
 end
