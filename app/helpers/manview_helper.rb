@@ -1,25 +1,5 @@
 module ManviewHelper
 
-  def parse_manhtml(text, name, category)
-    atext = text.split("\n")
-    ntext = Array.new
-    upname = name.upcase
-
-    atext.each do |line|
-      next if line =~ /^<html>|<\/html>|<head>|<\/head>|<body>|<\/body>|<\!--|-->|<meta/ ||
-              line =~ /OpenBSD 4.5 [January|Febuary|March|April|May|June|July|September|October|November|December]+/ ||
-              line =~ /OpenBSD .+ Manual/ ||
-              line =~ /<p><font size=3>#{upname} \( #{category} \)/
-
-      line.sub!(/align=center/, '')
-      line.sub!(/``/, '"')
-      line.gsub!(/<font size=3><tt>([a-zA-Z\.\-_0-9]+)<\/tt><font size=3>\(([0-9]+)\)(,*)/, " <a href=\"search?manview[man_category]=\\2&manview[man_name]=\\1&manview[strict]=true\">\\1(\\2)</a>\\3 ")
-      line.sub!(/width="100%"  rules="none"  frame="none"/, '')
-      ntext << line + "\n"
-    end
-
-    return ntext
-  end
 
   def man_parser(text, name)
 
@@ -46,16 +26,19 @@ module ManviewHelper
       line.sub!(/^\.\\\".*/, '')
       line.sub!(/^\.Dt.*/, '')
       line.sub!(/^\.Dd.*/, '')
+      line.sub!(/^\.Sm.*/, '')
+      line.sub!(/^\.TH.*/, '')
       line.sub!(/^\.Os/, '')
       line.sub!(/^\.Dv\s*/, '')
       line.sub!(/^\.Li\s*/, '')
-      line.sub!(/^\.TH.*/, '')
       line.sub!(/^\.\s*$/, '')
       line.sub!(/\\&/, '')
+      line.gsub!(/\\e/, '\\')
 
       # not sure here
       line.sub!(/^\.Bk.*/, '')
       line.sub!(/^\.Ek.*/, '')
+      line.sub!(/^\.Ev\s*/, '')
 
       # reformat
       bracket_open = true if !line.sub!(/^\.Pf\s+\(\s*(.+)\s*/, ".\\1").nil?
@@ -102,6 +85,11 @@ module ManviewHelper
       line.sub!(/^\.Op\s+Oo\s+Fl\s+Oc\s+Cm\s+(.+)\s+Op\s+Ar\s+(.+)/, " [[-]<b>\\1</b> [<u>\\2</u>]]")
       line.sub!(/^\.Op\s+Oo\s+Fl\s+Oc\s+Cm\s+(.+)\s+Ar\s+(.+)/, " [[-]<b>\\1</b> <u>\\2</u>]")
       line.sub!(/^\.Op\s+Oo\s+Fl\s+Oc\s+Cm\s+(.+)/, " [[-]<b>\\1</b> <u>\\2</u>]")
+      line.sub!(/^\.Op\s+Fl\s+(.+)Oo\s+Ar\s+(.+)\s+\:\s+Oc\s+Ns\s+Ar\s+(.+)\s+\:\s+Ns\s+Ar\s+(.+)\s+\:\s+Ns\s+Ar\s+(.+)/, "[-\\1 [\\2:]\\3:\\4:\\5]")
+      line.sub!(/^\.Op\s+Fl\s+(.+)Oo\s+Ar\s+(.+)\s+\:\s+Oc\s+Ns\s+Ar\s+(.+)/, "[-\\1 [\\2:]\\3]")
+      line.sub!(/^\.Op\s+Fl\s+(.+)Oo\s+Ar\s+(.+)\s+Oc\s+Ns\s+Ar\s+(.+)/, "[-\\1 [\\2]\\3]")
+      line.sub!(/^\.Op\s+Fl\s+(.+)Ar\s+(.+)Ns\s+Op\s+\:\s+Ns\s+Ar\s+(.+)/, "[<b>-\\1</b><u>\\2</u>[:<u>\\3</u>]]")
+      line.sub!(/^\.Op\s+Fl\s+(.+)Ar\s+(.+)\s+\:\s+Ns\s+Ar\s+(.+)/, " [<b>-\\1</b><u>\\2:\\3</u>]")
       line.sub!(/^\.Op\s+Fl\s+(.+)Ar\s+(.+)/, " [<b>-\\1</b><u>\\2</u>]")
       line.sub!(/^\.Op\s+Cm\s+(.+)Ar\s+(.+)/, " [<b>\\1</b><u>\\2</u>]")
       line.sub!(/^\.Op\s+Fl\s+(.+)/, " [<b>-\\1</b>]")
@@ -118,6 +106,10 @@ module ManviewHelper
       line.sub!(/^\.Oo\s+Oo\s+Fl\s+Oc\s+Cm\s+(.+)\s+Ar\s+(.+)/, "[[-] <b>\\1</b> <u>\\2</u>")
       line.sub!(/^\.Oo\s+Fl\s+Oc\s+Cm\s+(.+)\s+Ar\s+(.+)/, "[-] <b>\\1</b> <u>\\2</u>")
       line.sub!(/^\.Oo\s+Fl\s+Oc\s+Ns\s+Cm\s+(.+)/, "[-] <b>\\1</b>")
+      line.sub!(/^\.Oo\s+Fl\s+(.+)\\(.+)/, "[<b>-\\1</b>")
+      line.sub!(/^\.Oo\s+Ar\s+(.+)\s+Ns\s+(.+)\s+Oc\s+Ns\s+Ar(.+)/, "[\\1\\2]\\3")
+      line.sub!(/^\.Oo\s+Ar\s+(.+)\s+Ns\s+Oc/, "[\\1]")
+      line.sub!(/^\.Oo\s+Ar\s+(.+)\s+Oc/, "[\\1]")
       line.sub!(/^\.Oo/, '[')
       line.sub!(/^\.Oc/, ']')
       line.sub!(/^\.Dq\s*([a-zA-Z0-9]+)\s*([a-zA-Z0-9]*)/, "\"\\1 \\2\"")
@@ -197,6 +189,7 @@ module ManviewHelper
           !line.sub!(/^\.It\s+Cm\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b></th><th>").nil? ||
           !line.sub!(/^\.It\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><u>\\1</u></th><th>").nil? ||
           !line.sub!(/^\.It\s+Pa\s+(.+)/, "<tr><th valign=\"top\">\\1</th><th>").nil? ||
+          !line.sub!(/^\.It\s+Va\s+(.+)/, "<tr><th valign=\"top\">\\1</th><th>").nil? ||
           !line.sub!(/^\.It\s+Aq\s+Pa\s+(.+)/, "<tr><th valign=\"top\"><u>&lt;\\1&gt;</u></th><th>").nil? ||
           !line.sub!(/^\.It\s+Bq\s+Er\s+(.+)/, "<tr><th valign=\"top\">[\\1]</th><th>").nil? ||
           !line.sub!(/^\.It\s*/, "<tr><th valign=\"top\"></th><th>").nil?
