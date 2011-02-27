@@ -4,7 +4,8 @@
 <div class="box tabular" style="width=100px">
   <p><%= error_messages_for 'manview' %></p>
   <p><%= f.text_field :man_name, :required => true %></p>
-  <p><%= f.select :man_category, [ 'any', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], :include_blank => false %></p>
+  <p><%= f.select :man_category, @categories, :include_blank => false %></p>
+  <p><%= f.select :man_arch, @archs, :include_blank => false %></p>
   <p><%= f.select :man_os, @os_selection, :include_blank => false %></p>
   <p><%= f.submit 'Search' %></p>
 </div>

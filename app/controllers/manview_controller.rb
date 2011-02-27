@@ -9,6 +9,8 @@ class ManviewController < ApplicationController
   def index
     @manpage = ""
     @os_selection = [ 'PhantomBSD' ]
+    @categories = [ 'any', 1, 2, 3, '3p', 4, 5, 6, 7, 8, 9 ]
+    @archs = [ 'any', 'i386', 'AMD64']
   end
 
   # XXX: statt eigenen view in index rendern
@@ -17,14 +19,14 @@ class ManviewController < ApplicationController
     search = params[:manview][:man_name]
     category = params[:manview][:man_category]
     os = params[:manview][:man_os]
+    arch = params[:manview][:man_arch] || 'any'
     strict = params[:manview][:strict] == 'true' ? true : false
     @raw = params[:manview][:raw] == 'true' ? true : false
 
     @found = Array.new
     record = Struct.new('OpenBSDMan', :name, :fullname, :title, :category, :text)
 
-    if search !~ /^[a-zA-Z0-9\._-]+$/
-      #@found.push record.new("nothing", "nothing", "nothing", "any", "Invalid search string")
+    if search !~ /^[a-zA-Z0-9\._\-:]+$/
       flash[:error] = "Invalid search string"
       redirect_to :action => 'index'
       return
@@ -35,14 +37,16 @@ class ManviewController < ApplicationController
     if (strict)
       db.each { | entry |
         manpage = Marshal.load(entry[1])
-        if manpage.category == category && manpage.name =~ /^#{search}$/
+        next if manpage.category != category
+        if manpage.name =~ /^#{search}$/
           @found.push manpage
         end
       }
       if @found.empty?
         db.each { | entry |
           manpage = Marshal.load(entry[1])
-          if manpage.category == category && (manpage.fullname =~ /.+, #{search}$/ || manpage.fullname =~ /.+, #{search},.+/)
+          next if manpage.category != category
+          if manpage.fullname =~ /.+, #{search}$/ || manpage.fullname =~ /.+, #{search},.+/
             @found.push manpage
           end
         }
@@ -50,13 +54,20 @@ class ManviewController < ApplicationController
     elsif (category != 'any')
       db.each { | entry |
         manpage = Marshal.load(entry[1])
-        if manpage.category == category && manpage.fullname =~ /#{search}/
+        if arch != 'any' && manpage.category =~ /\//
+          next if manpage.category !~ /\/#{arch}/
+        end
+        next if manpage.category != category
+        if manpage.fullname =~ /#{search}/
           @found.push manpage
         end
       }
     else
       db.each { | entry |
         manpage = Marshal.load(entry[1])
+        if arch != 'any' && manpage.category =~ /\//
+          next if manpage.category !~ /\/#{arch}/
+        end
         if manpage.fullname =~ /#{search}/
           @found.push manpage
         end
@@ -64,8 +75,7 @@ class ManviewController < ApplicationController
     end
 
     if @found.empty?
-      #@found.push record.new("nothing", "nothing", "nothing", "any", "Nothing found for your search request #{search}")
-      flash[:error] = "Nothing found for your search request #{search}"
+      flash[:error] = "Nothing found for your search request #{search} #{category} #{arch}"
       redirect_to :action => 'index'
       return
     end

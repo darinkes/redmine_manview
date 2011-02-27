@@ -3,3 +3,4 @@ en:
   field_man_name: Manpage Name
   field_man_category: Category
   field_man_os: Operating System
+  field_man_arch: Architecture
