@@ -104,7 +104,7 @@ class ManviewController < ApplicationController
     else
       if !cached
         @found.each do | element |
-          element.text = man_parser(element.rawtext, element.name)
+          element.text = man_parser(element.rawtext, element.name, element.os)
         end
         add2cache(query, @found)
       end
@@ -132,7 +132,7 @@ private
     CACHE.clear
   end
 
-  def man_parser(text, name)
+  def man_parser(text, name, os)
 
     atext = text.split("\n")
     ntext = Array.new
@@ -190,13 +190,13 @@ private
       line.sub!(/^\.Ql\s+(.+)/, " '\\1' ")
       line.sub!(/^\.So\s+(.+)\s+Sc/, " '\\1' ")
       line.sub!(/^\.Pp/, '<br><br>')
-      line.sub!(/^\.Xr\s+(.+)\s+([0-9]+)\s*(,)*/, " <a href=\"search?manview[man_category]=\\2&manview[man_name]=\\1&manview[strict]=true\">\\1(\\2)</a>\\3 ")
+      line.sub!(/^\.Xr\s+(.+)\s+([0-9]+)\s*(,)*/, " <a href=\"search?manview[man_category]=\\2&manview[man_name]=\\1&manview[strict]=true&manview[man_os]=#{os}\">\\1(\\2)</a>\\3 ")
       line.sub!(/^\.Sh\s+(.+)/, "<br><br><b>\\1</b><br>")
       line.sub!(/^\.SH\s+(.+)/, "<br><br><b>\\1</b><br>")
       # order matters here!
       line.sub!(/^\.Nm\s+:\s*$/, "<b>#{name}</b>:")
-      line.sub!(/^\.Nm\s+(.+)\s*(,)*/, " <b>\\1</b>\\2 ")
-      line.sub!(/^\.Nm\s+(.+)/, "<b>\\1</b>")
+      line.sub!(/^\.Nm\s+(.+)\s+(,)+/, " <b>\\1</b>\\2 ")
+      line.sub!(/^\.Nm\s+(.+)/, "<br><b>\\1</b>")
       line.sub!(/^\.Nm\s*$/, "<b>#{name}</b>")
 
       line.sub!(/^\.Cm\s+(.+)/, "<b>\\1</b>")
@@ -313,17 +313,17 @@ private
       line.sub!(/^\.Bl(.+)/, "<table border=\"0\" style=\"text-align:left;\" cellpadding=\"10\">")
 
       # List Item
-      close_tr = true if !line.sub!(/^\.It\s+Fl\s+(.+)\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><b>-\\1</b> <u>\\2</u></th><th>").nil? ||
-          !line.sub!(/^\.It\s+Fl\s+(.+)/, "<tr><th valign=\"top\"><b>-\\1</b></th><th>").nil? ||
-          !line.sub!(/^\.It\s+Cm\s+(.+)\s+Ar\s+(.+)\s+Ns\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b> <u>\\2\\3</u></th><th>").nil? ||
-          !line.sub!(/^\.It\s+Cm\s+(.+)\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b> <u>\\2</u></th><th>").nil? ||
-          !line.sub!(/^\.It\s+Cm\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b></th><th>").nil? ||
-          !line.sub!(/^\.It\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><u>\\1</u></th><th>").nil? ||
-          !line.sub!(/^\.It\s+Pa\s+(.+)/, "<tr><th valign=\"top\">\\1</th><th>").nil? ||
-          !line.sub!(/^\.It\s+Va\s+(.+)/, "<tr><th valign=\"top\">\\1</th><th>").nil? ||
-          !line.sub!(/^\.It\s+Aq\s+Pa\s+(.+)/, "<tr><th valign=\"top\"><u>&lt;\\1&gt;</u></th><th>").nil? ||
-          !line.sub!(/^\.It\s+Bq\s+Er\s+(.+)/, "<tr><th valign=\"top\">[\\1]</th><th>").nil? ||
-          !line.sub!(/^\.It\s*/, "<tr><th valign=\"top\"></th><th>").nil?
+      close_tr = true if !line.sub!(/^\.It\s+Fl\s+(.+)\s+Ar\s+(.+)/, "<tr><th valign=\"top\" ><b>-\\1</b> <u>\\2</u></th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Fl\s+(.+)/, "<tr><th valign=\"top\"><b>-\\1</b></th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Cm\s+(.+)\s+Ar\s+(.+)\s+Ns\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b> <u>\\2\\3</u></th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Cm\s+(.+)\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b> <u>\\2</u></th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Cm\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b></th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><u>\\1</u></th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Pa\s+(.+)/, "<tr><th valign=\"top\">\\1</th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Va\s+(.+)/, "<tr><th valign=\"top\">\\1</th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Aq\s+Pa\s+(.+)/, "<tr><th valign=\"top\"><u>&lt;\\1&gt;</u></th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Bq\s+Er\s+(.+)/, "<tr><th valign=\"top\">[\\1]</th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s*/, "<tr><th valign=\"top\"></th><th style=\"font-weight: normal\">").nil?
 
       # End List
       # reset to defaults
@@ -336,7 +336,7 @@ private
       # link to man-page
 =begin
       if line =~ /.+\(\d+\)/
-         line.sub!(/(.+)\s*([0-9]+)\s*(,)*/, " <a href=\"search?manview[man_category]=\\2&manview[man_name]=\\1&manview[strict]=true\">\\1\\2</a>\\3 ")
+         line.sub!(/(.+)\s*([0-9]+)\s*(,)*/, " <a href=\"search?manview[man_category]=\\2&manview[man_name]=\\1&manview[strict]=true&manview[man_os]=#{os}\">\\1\\2</a>\\3 ")
       end
 =end
 
