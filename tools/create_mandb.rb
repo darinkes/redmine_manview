@@ -9,7 +9,7 @@ notfound = 0
 found = 0
 id = 0
 
-record = Struct.new('OpenBSDMan', :name, :fullname, :title, :category, :text)
+record = Struct.new('ManPage', :name, :fullname, :title, :category, :os, :text)
 
 File.open("/usr/share/man/whatis.db").each { |line|
   array = line.split(/\s+-\s+/)
@@ -50,7 +50,7 @@ File.open("/usr/share/man/whatis.db").each { |line|
   end
 
 
-  rec = record.new(pure_name, name, title, category, data)
+  rec = record.new(pure_name, name, title, category, 'PhantomBSD', data)
   db[id] = Marshal.dump(rec)
 
   id += 1

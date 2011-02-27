@@ -9,7 +9,7 @@ class ManviewController < ApplicationController
   # XXX: autocompletion?
   def index
     @manpage = ""
-    @os_selection = [ 'PhantomBSD' ]
+    @os_selection = [ 'PhantomBSD', 'OpenBSD current' ]
     @categories = [ 'any', 1, 2, 3, '3p', 4, 5, 6, 7, 8, 9 ]
     @archs = [ 'any', 'i386', 'AMD64']
     @cachesize = CACHE.size
@@ -28,7 +28,8 @@ class ManviewController < ApplicationController
     @raw = params[:manview][:raw] == 'true' ? true : false
 
     @found = Array.new
-    Struct.new('OpenBSDMan', :name, :fullname, :title, :category, :text)
+
+    Struct.new('ManPage', :name, :fullname, :title, :category, :os, :text)
 
     if search !~ /^[a-zA-Z0-9\._\-:]+$/
       flash[:error] = "Invalid search string"
@@ -49,6 +50,7 @@ class ManviewController < ApplicationController
       db.each { | entry |
         manpage = Marshal.load(entry[1])
         next if manpage.category != category
+        next if manpage.os != os && os != 'any'
         if manpage.name =~ /^#{search}$/
           @found.push manpage
         end
@@ -57,6 +59,7 @@ class ManviewController < ApplicationController
         db.each { | entry |
           manpage = Marshal.load(entry[1])
           next if manpage.category != category
+          next if manpage.os != os && os != 'any'
           if manpage.fullname =~ /.+, #{search}$/ || manpage.fullname =~ /.+, #{search},.+/
             @found.push manpage
           end
@@ -70,6 +73,7 @@ class ManviewController < ApplicationController
           next if manpage.category !~ /\/#{arch}/
         end
         next if manpage.category != category
+        next if manpage.os != os && os != 'any'
         if manpage.fullname =~ /#{search}/
           @found.push manpage
         end
@@ -81,6 +85,7 @@ class ManviewController < ApplicationController
         if arch != 'any' && manpage.category =~ /\//
           next if manpage.category !~ /\/#{arch}/
         end
+        next if manpage.os != os && os != 'any'
         if manpage.fullname =~ /#{search}/
           @found.push manpage
         end
@@ -91,7 +96,7 @@ class ManviewController < ApplicationController
     if @found.empty?
       db.close
       add2cache(query, [])
-      flash[:error] = "Nothing found for your search request #{search} #{category} #{arch}"
+      flash[:error] = "Nothing found for your search request #{search} #{category} #{arch} #{os}"
       redirect_to :action => 'index', :querytime => Time.now - start
       return
     else

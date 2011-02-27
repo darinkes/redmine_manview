@@ -9,12 +9,12 @@
   Found more than one manpage for your search-request<br>
   Choose one:<br><br>
   <% @found.each do |element| %>
-    <%= link_to "#{element.name} (#{element.category})", :action => 'search', :manview => {
+    <%= link_to "#{element.name} (#{element.category}) - #{element.os}", :action => 'search', :manview => {
         :man_name => element.name, :man_category => element.category, :strict => true } %><br>
   <% end %>
 <% else %>
   <% @found.each do |element| %>
-    <h2><%= "#{element.name} (#{element.category})" %></h2>
+    <h2><%= "#{element.name} (#{element.category}) - #{element.os}" %></h2>
     <div style="max-width:60em; margin-left:5em;">
       <% if !@raw %>
         <%= link_to "Link to #{element.name} (#{element.category})", :action => 'search', :manview => {

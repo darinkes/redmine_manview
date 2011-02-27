@@ -1,6 +1,6 @@
 require 'bdb'
 
-Struct.new('OpenBSDMan', :name, :fullname, :title, :category, :text)
+Struct.new('OpenBSDMan', :name, :fullname, :title, :category, :os, :text)
 
 db = BDB::Btree.open('man.db', nil, "r")
 
