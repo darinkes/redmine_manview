@@ -2,9 +2,11 @@ class ManviewController < ApplicationController
   unloadable
 
   require 'bdb'
+  require 'rubygems'
+  require 'redis'
 
   FILE = '/var/www/redmine/man.db'
-  CACHE = Hash.new
+  CACHE = Redis.new
 
   # XXX: autocompletion?
   def index
@@ -12,7 +14,7 @@ class ManviewController < ApplicationController
     @os_selection = [ 'any', 'PhantomBSD', 'OpenBSD current' ]
     @categories = [ 'any', 1, 2, 3, '3p', 4, 5, 6, 7, 8, 9 ]
     @archs = [ 'any', 'i386', 'AMD64']
-    @cachesize = CACHE.size
+    @cachesize = CACHE.dbsize
     @querytime = params[:querytime] || nil
   end
 
@@ -43,7 +45,6 @@ class ManviewController < ApplicationController
     db = BDB::Btree.open(FILE, nil, "r")
 
     @found = get_from_cache(query)
-
 
     if !@found.nil?
       cached = true
@@ -102,16 +103,16 @@ class ManviewController < ApplicationController
       redirect_to :action => 'index', :querytime => Time.now - start
       return
     else
-      if !cached
+      if !cached && @found.size == 1
         @found.each do | element |
-          element.text = man_parser(element.rawtext, element.name, element.os)
+          element.text = new_man_parser(element.rawtext, element.name, element.os)
         end
-        add2cache(query, @found)
       end
+      add2cache(query, @found)
     end
 
     @multiman = @found.size == 1 ? false : true
-    @cachesize = CACHE.size
+    @cachesize = CACHE.dbsize
     @querytime = Time.now - start
 
     db.close
@@ -121,15 +122,195 @@ private
 
   # XXX: clear cache if the shasum of db has changed
   def get_from_cache(query)
-    return CACHE.fetch(query, nil)
+    cache = CACHE.get query
+    return nil if cache.nil?
+    result = Marshal.load(cache)
+    return result
   end
 
   def add2cache(query, result)
-    CACHE.merge!({ query => result })
+    CACHE.delete(query)
+    CACHE.set query, Marshal.dump(result)
   end
 
   def clear_cache
-    CACHE.clear
+  end
+
+  def man_link(name, category, os)
+    return  "<a href=\"search?manview[man_category]=#{category}&manview[man_name]=#{name}&manview[man_os]=#{os}&manview[strict]=true\">#{name}(#{category})</a> "
+  end
+
+  def new_man_parser(text, name, os)
+
+    atext = text.split("\n")
+    ntext = Array.new
+
+    close_tr = false
+
+    atext.each_index do | index |
+      line = atext[index].to_s
+
+      next if line =~ /^\.\\\"|^\.Dt|^\.Os|^\.Dd|^\.Bk|^\.Ek|^\.TH/
+
+      items = line.split(' ')
+      line = ''
+
+      close_u   = false
+      close_b   = false
+      no_space  = false
+
+      columns = true
+
+      items.each_index do | index |
+        item = items[index]
+
+        if close_u
+          item += '</u>'
+          close_u = false
+        end
+
+        if close_b
+          item += '</b>'
+          close_b = false
+        end
+
+        # these elements must have a leading dot
+        if item =~ /^\.It$/
+          item = ''
+          item = '</th></tr>' if close_tr
+          item += '<tr><th style="font-weight: normal" valign="top">'
+          items << '</th><th style="font-weight: normal" valign="top">'
+          close_tr = true
+        end
+
+        # remove leading dot
+        item.sub!(/^\./, '')
+
+        if item =~ /^Sh$|^SH$/
+          line = "<br><br><h2>#{items[1, items.size].join(' ').to_s}</h2>"
+          break
+        elsif item =~ /^Nm$/
+          line = "<b>#{name}</b>"
+          if items[index + 1] == name
+            line = '<br>' + line
+          end
+          break
+        elsif item =~ /^Nd$/
+          line = " - #{items[1, items.size].join(' ').to_s}"
+          break
+        elsif item =~ /^Xr$/
+          line = man_link(items[index + 1], items[index + 2], os)
+          line += ',' if items[index + 3].eql?(',')
+          break
+        elsif item =~ /^Ns$/
+          nospace = true
+          item = ''
+        elsif item =~ /^Xo$/
+          item = ''
+        elsif item =~ /^Xc$/
+          item = ''
+        elsif item =~ /^Op$/
+          item = '['
+          items << '.Oc'
+        elsif item =~ /^Pa$/
+          item = '<u>'
+          items << '</u>'
+        elsif item =~ /^Va$/
+          item = '<u>'
+          items << '</u>'
+        elsif item =~ /^Em$/
+          item = '<u>'
+          items << '</u>'
+        elsif item =~ /^Oo$/
+          item = '['
+        elsif item =~ /^Oc$/
+          item = ']'
+        elsif item =~ /^Fl$/
+          item = '- <b>'
+          close_b = true
+        elsif item =~ /^B$/
+          item = '<b>'
+          items << '</b>'
+        elsif item =~ /^Cm$/
+          item = '<b>'
+          items << '</b>'
+        elsif item =~ /^Ar$/
+          item = '<u>'
+          close_u = true
+        elsif item =~ /^Dq$/
+          item = '"'
+          items << '"'
+        elsif item =~ /^Sq$/
+          item = '\''
+          items << '\''
+        elsif item =~ /^Pp$/
+          item = '<br><br>'
+        elsif item =~ /^Bl$/
+          item = '<table border="0" style="text-align:left;" cellpadding="2">'
+        elsif item =~ /^El$/
+          item = '</table>'
+          close_tr = false
+        elsif item =~ /^Ds$/
+          item = ''
+        elsif item =~ /^Sy$/
+          item = ''
+        elsif item =~ /^Dv$/
+          item = ''
+        elsif item =~ /^Ta$/
+          item = ''
+        elsif item =~ /^Li$/
+          item = ''
+        elsif item =~ /^Bd$/
+          item = '<pre>'
+        elsif item =~ /^Ed$/
+          item = '</pre>'
+        elsif item =~ /^Dl$/
+          item = '<pre>'
+          items << '</pre>'
+        elsif item =~ /^Bx/
+          item = 'BSD'
+        elsif item =~ /^Fx/
+          item = 'FreeBSD'
+        elsif item =~ /^Nx/
+          item = 'NetBSD'
+        elsif item =~ /^Ox/
+          item = 'OpenBSD'
+        elsif item =~ /^Bsx/
+          item = 'BSDI BSD/OS'
+        elsif item =~ /^\-literal/
+          item = ''
+          break
+        elsif item =~ /^\-dash/
+          item = ''
+          break
+        elsif item =~ /^\-offset/
+          item = ''
+          break
+        elsif item =~ /^\-tag/
+          item = ''
+        elsif item =~ /^\-width/
+          item = ''
+          break
+        elsif item =~ /^\-column/
+          nline = line.sub(/.+\s+\-column/, '').sub(/\-.+/, '')
+          if nline =~ /\"/
+            columns = nline.split(/\"/).delete_if{|a| a.empty? || a.eql?(' ')}.size
+          else
+            columns = nline.split(/\s+/).delete_if{|a| a.empty? || a.eql?(' ')}.size
+          end
+          break
+        end
+
+        if nospace
+          line += item
+        else
+          line += ' ' + item
+        end
+      end
+      line.gsub!(/\\e/, '\\')
+      ntext << line + "\n" if !line.empty?
+    end
+    return ntext
   end
 
   def man_parser(text, name, os)
@@ -196,6 +377,7 @@ private
       # order matters here!
       line.sub!(/^\.Nm\s+:\s*$/, "<b>#{name}</b>:")
       line.sub!(/^\.Nm\s+(.+)\s+(,)+/, " <b>\\1</b>\\2 ")
+      line.sub!(/^\.Nm\s+\./, " <b>#{name}</b>. ")
       line.sub!(/^\.Nm\s+(.+)/, "<br><b>\\1</b>")
       line.sub!(/^\.Nm\s*$/, "<b>#{name}</b>")
 
@@ -297,12 +479,12 @@ private
       # Begin List
       # column list
       if line =~ /\.Bl\s+-column/ && columns.nil?
-         columns = atext[index + 1].sub(/\.It.+/, '').sub(/\s+/, ' ').split(/\s+/).size
+         columns = atext[index].sub(/\.It/, '').sub(/\s+/, ' ').split(/\s+/).size
          line = "<table border=\"0\" style=\"text-align:left;\" cellpadding=\"10\">"
       end
 
       if !columns.nil? && line =~ /^\.It.+/
-         items = line.sub(/\.It\s+(Sy\s*)*/, '').sub(/\s+/, ' ').split(/\s+/)
+         items = line.sub(/\.It/, '').gsub(/\s+[A-Z]{1}[a-z]{1}\s+/, '').sub(/\s+/, ' ').split(/\s+/)
          line = "<tr>"
          items.each do | item |
            line += "<th>#{item}</th>"
@@ -313,9 +495,13 @@ private
       line.sub!(/^\.Bl(.+)/, "<table border=\"0\" style=\"text-align:left;\" cellpadding=\"10\">")
 
       # List Item
-      close_tr = true if !line.sub!(/^\.It\s+Fl\s+(.+)\s+Ar\s+(.+)/, "<tr><th valign=\"top\" ><b>-\\1</b> <u>\\2</u></th><th style=\"font-weight: normal\">").nil? ||
+      # .It Cm carpdemote Op Ar number
+      close_tr = true if
+          !line.sub!(/^\.It\s+Fl\s+(.+)\s+Op\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><b>-\\1</b> [<u>\\2</u>]</th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Fl\s+(.+)\s+Ar\s+(.+)/, "<tr><th valign=\"top\" ><b>-\\1</b> <u>\\2</u></th><th style=\"font-weight: normal\">").nil? ||
           !line.sub!(/^\.It\s+Fl\s+(.+)/, "<tr><th valign=\"top\"><b>-\\1</b></th><th style=\"font-weight: normal\">").nil? ||
           !line.sub!(/^\.It\s+Cm\s+(.+)\s+Ar\s+(.+)\s+Ns\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b> <u>\\2\\3</u></th><th style=\"font-weight: normal\">").nil? ||
+          !line.sub!(/^\.It\s+Cm\s+(.+)\s+Op\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b> [<u>\\2</u>]</th><th style=\"font-weight: normal\">").nil? ||
           !line.sub!(/^\.It\s+Cm\s+(.+)\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b> <u>\\2</u></th><th style=\"font-weight: normal\">").nil? ||
           !line.sub!(/^\.It\s+Cm\s+(.+)/, "<tr><th valign=\"top\"><b>\\1</b></th><th style=\"font-weight: normal\">").nil? ||
           !line.sub!(/^\.It\s+Ar\s+(.+)/, "<tr><th valign=\"top\"><u>\\1</u></th><th style=\"font-weight: normal\">").nil? ||
