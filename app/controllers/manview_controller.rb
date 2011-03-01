@@ -7,6 +7,7 @@ class ManviewController < ApplicationController
 
   FILE = '/var/www/redmine/man.db'
   CACHE = Redis.new
+  DEF_ARCH = 'i386'
 
   # XXX: autocompletion?
   def index
@@ -64,6 +65,16 @@ class ManviewController < ApplicationController
           next if manpage.category != category
           next if manpage.os != os && os != 'any'
           if manpage.fullname =~ /.+, #{search}$/ || manpage.fullname =~ /.+, #{search},.+/
+            @found.push manpage
+          end
+        }
+      end
+      if @found.empty?
+        db.each { | entry |
+          manpage = Marshal.load(entry[1])
+          next if manpage.category != "#{category}/#{DEF_ARCH}"
+          next if manpage.os != os && os != 'any'
+          if manpage.name =~ /^#{search}$/ || manpage.fullname =~ /.+, #{search}$/ || manpage.fullname =~ /.+, #{search},.+/
             @found.push manpage
           end
         }
@@ -146,11 +157,40 @@ private
     ntext = Array.new
 
     close_tr = false
+    pre_opened = false
+    gnu = false
+
+    atext = atext.join(' --n-- ').gsub(/\\[&]/, '').gsub(/\\([\-\s\|]){1}/, "\\1").gsub(/\\fB([A-Za-z0-9\-=\,\+\*\s\.\#\@]+)\\fR/, "<b>\\1</b>").split(' --n-- ')
+    atext = atext.join(' --n-- ').gsub(/\\[&]/, '').gsub(/\\([\-\s\|]){1}/, "\\1").gsub(/\\fB([A-Za-z0-9\-=\,\+\*\s\.\#\@]+)\\fP/, "<b>\\1</b>").split(' --n-- ')
+    atext = atext.join(' --n-- ').gsub(/\\[&]/, '').gsub(/\\([\-\s\|]){1}/, "\\1").gsub(/\\fI([A-Za-z0-9\-=\,\+\*\s\.\#\@]+)\\fR/, "<u>\\1</u>").split(' --n-- ')
+    atext = atext.join(' --n-- ').gsub(/\\[&]/, '').gsub(/\\([\-\s\|]){1}/, "\\1").gsub(/\\fI([A-Za-z0-9\-=\,\+\*\s\.\#\@]+)\\fP/, "<u>\\1</u>").split(' --n-- ')
 
     atext.each_index do | index |
       line = atext[index].to_s
 
-      next if line =~ /^\.\\\"|^\.Dt|^\.Os|^\.Dd|^\.Bk|^\.Ek|^\.TH/
+      if pre_opened && line !~ /^\.Ed/
+        ntext << line.gsub(/\\e/, '\\') + "\n"
+        next
+      end
+
+      gnu = true if line =~ /^\.\\\"\s+Standard\s+preamble:/
+
+
+      if gnu && line !~ /^\.SH/
+        next
+      else
+        gnu = false
+      end
+
+      line.sub!(/^\.BR\s*/, '')
+      line.gsub!(/\\\*\(C\+/, 'C++')
+      line.gsub!(/\\\*\([L|R]/, '')
+
+      line.gsub!(/\s*(\\fB|\\fI)*([A-Za-z\-\.]+)(\\fR|\\fP)*\s*\|*\(([0-9]+)\)(,|\.)*/,
+        " <a href=\"search?manview[man_category]=\\4&manview[man_name]=\\2&manview[strict]=true&manview[man_os]=#{os}\">\\1\\2\\3(\\4)</a>\\5 ")
+      line.sub!(/^\.IX\s+Item\s+(.+)/, "<br><br><u>\\1</u><br><br>")
+
+      next if line =~ /^\.\\\"|^\.Dt|^\.Os|^\.Dd|^\.Bk|^\.Ek|^\.TH|^\.Sm|^\.IX|^\.IP/
 
       items = line.split(' ')
       line = ''
@@ -158,7 +198,6 @@ private
       close_u   = false
       close_b   = false
       no_space  = false
-
       columns = true
 
       items.each_index do | index |
@@ -190,9 +229,10 @@ private
           line = "<br><br><h2>#{items[1, items.size].join(' ').to_s}</h2>"
           break
         elsif item =~ /^Nm$/
-          line = "<b>#{name}</b>"
-          if items[index + 1] == name
-            line = '<br>' + line
+          if items.size == 1
+            line = "<b>#{name}</b>"
+          else
+            line = "<b>#{items.join(' ').sub(/\.*Nm\s+/, '')}</b>"
           end
           break
         elsif item =~ /^Nd$/
@@ -211,29 +251,42 @@ private
           item = ''
         elsif item =~ /^Op$/
           item = '['
-          items << '.Oc'
+          items << 'Oc'
         elsif item =~ /^Pa$/
           item = '<u>'
           items << '</u>'
         elsif item =~ /^Va$/
           item = '<u>'
           items << '</u>'
+        elsif item =~ /^Pq$/
+          item = '(<u>'
+          items << '</u>)'
         elsif item =~ /^Em$/
           item = '<u>'
           items << '</u>'
+        elsif item =~ /^Ft$/
+          item = '<br><u>'
+          items << '</u>'
+        elsif item =~ /^Aq$/
+          item = '&lt;'
+          items << '&gt;'
         elsif item =~ /^Oo$/
           item = '['
         elsif item =~ /^Oc$/
           item = ']'
         elsif item =~ /^Fl$/
-          item = '- <b>'
-          close_b = true
+          #item = '- <b>'
+          #close_b = true
+          item = '- '
         elsif item =~ /^B$/
+          item = '<b>'
+          items << '</b>'
+        elsif item =~ /^Fn$/
           item = '<b>'
           items << '</b>'
         elsif item =~ /^Cm$/
           item = '<b>'
-          items << '</b>'
+          close_b = true
         elsif item =~ /^Ar$/
           item = '<u>'
           close_u = true
@@ -243,7 +296,7 @@ private
         elsif item =~ /^Sq$/
           item = '\''
           items << '\''
-        elsif item =~ /^Pp$/
+        elsif item =~ /^Pp$|^PP$/
           item = '<br><br>'
         elsif item =~ /^Bl$/
           item = '<table border="0" style="text-align:left;" cellpadding="2">'
@@ -262,11 +315,16 @@ private
           item = ''
         elsif item =~ /^Bd$/
           item = '<pre>'
+          pre_opened = true
         elsif item =~ /^Ed$/
           item = '</pre>'
+          pre_opened = false
         elsif item =~ /^Dl$/
           item = '<pre>'
           items << '</pre>'
+        elsif item =~ /^Fd$/
+          line = '<b><pre>' + CGI::escapeHTML(items.join(' ').sub(/^Fd\s/, '')) + '</pre></b>'
+          break
         elsif item =~ /^Bx/
           item = 'BSD'
         elsif item =~ /^Fx/
