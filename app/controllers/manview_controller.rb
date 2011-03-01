@@ -186,7 +186,7 @@ private
       line.gsub!(/\\\*\(C\+/, 'C++')
       line.gsub!(/\\\*\([L|R]/, '')
 
-      line.gsub!(/\s*(\\fB|\\fI)*([A-Za-z\-\.]+)(\\fR|\\fP)*\s*\|*\(([0-9]+)\)(,|\.)*/,
+      line.gsub!(/\s*(<u>|<b>)*([A-Za-z\-\.]+)(<\/u>|<\/b>)*\s*\|*\(([0-9]+)\)(,|\.)*/,
         " <a href=\"search?manview[man_category]=\\4&manview[man_name]=\\2&manview[strict]=true&manview[man_os]=#{os}\">\\1\\2\\3(\\4)</a>\\5 ")
       line.sub!(/^\.IX\s+Item\s+(.+)/, "<br><br><u>\\1</u><br><br>")
 
