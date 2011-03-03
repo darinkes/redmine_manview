@@ -1,5 +1,10 @@
 require 'redmine'
 
+Dir::foreach(File.join(File.dirname(__FILE__), 'lib')) do |file|
+  next unless /\.rb$/ =~ file
+  require file
+end
+
 Redmine::Plugin.register :redmine_manpage do
   name 'Redmine Manpage plugin'
   author 'Stefan Rinkes'
