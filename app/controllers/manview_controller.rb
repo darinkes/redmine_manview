@@ -12,7 +12,7 @@ class ManviewController < ApplicationController
   # XXX: autocompletion?
   def index
     @manpage = ""
-    @os_selection = [ 'any', 'PhantomBSD', 'OpenBSD49' ]
+    @os_selection = [ 'PhantomBSD', 'OpenBSD49', 'any' ]
     @categories = [ 'any', 1, 2, 3, '3p', 4, 5, 6, 7, 8, 9 ]
     @archs = [ 'any', 'i386', 'AMD64']
     @cachesize = CACHE.dbsize
