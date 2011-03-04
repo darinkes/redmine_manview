@@ -72,6 +72,8 @@ File.open("/usr/share/man/whatis.db").each { |line|
     data += element + "\n" if element !~ /^<\/pre|^<\/body|^<\/html/
   end
 
+  category = category + '/' + arch if !arch.nil?
+
   rec = record.new(pure_name, name, title, category, 'PhantomBSD', data)
   db["#{id}-PhantomBSD"] = Marshal.dump(rec)
 
