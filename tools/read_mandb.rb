@@ -10,7 +10,7 @@ db.each do | bla |
   puts "name: \"" + foo.name + "\""
   puts "fullname: \"" + foo.fullname + "\""
   puts "category: \"" + foo.category + "\""
-  puts "text: \"" + foo.rawtext + "\""
+  puts "text: \"" + foo.text + "\""
   #exit 1
 end
 
