@@ -1,11 +1,18 @@
 = Redmine ManView Plugin
 
 This plugin adds a manpage viewer to your redmine setup.
-It reads raw manpages in mdoc format from a BerkleyDatabase
-and parse a nice html-view from it.
+It reads manpages in html format, created by man2web,
+from a BerkleyDatabase.
 
-In the directory 'tools' you can find the scripts I used
-to create the manpage databases.
+It also adds a wiki-tag to your redmine-setup which creates
+a link to the given manpage:
+	{{manpage(name, category, os)}}
+
+Search results are cached in a redis database.
+
+In the directory 'tools' you can find the script I used
+to create the manpage database. This script is designed
+for OpenBSD and only tested on OpenBSD machines.
 
 = License
 
