@@ -34,7 +34,7 @@ class ManviewController < ApplicationController
 
     Struct.new('ManPage', :name, :fullname, :title, :category, :os, :text)
 
-    if search !~ /^[a-zA-Z0-9\._\-:]+$/
+    if search !~ /^[a-zA-Z0-9\._\-:\+]+$/
       flash[:error] = "Invalid search string"
       redirect_to :action => 'index'
       return
@@ -45,6 +45,8 @@ class ManviewController < ApplicationController
     db = BDB::Btree.open(FILE, nil, "r")
 
     @found = get_from_cache(query)
+
+    search = Regexp.escape(search)
 
     if !@found.nil?
       cached = true
