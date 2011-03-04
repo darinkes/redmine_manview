@@ -15,10 +15,14 @@
 <% if @found %>
   <% if @multiman %>
     <h3>Found <b><%= @found.size %></b> manpages for your search-request</h3>
+    <ul>
     <% @found.each do |element| %>
+      <li>
       <%= link_to "#{element.name} (#{element.category}) - #{element.os}", :action => 'index', :manview => {
-          :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %><br>
+          :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %>
+      </li>
     <% end %>
+    </ul>
   <% else %>
     <style type="text/css">
         SPAN.bold { text-decoration: none; font-weight: bold }
