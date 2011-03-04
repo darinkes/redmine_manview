@@ -13,22 +13,19 @@
       :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %><br>
   <% end %>
 <% else %>
+  <style type="text/css">
+        BODY {font-family: arial, helvetica, sans-serif; }
+        SPAN.bold { text-decoration: none; font-weight: bold }
+        SPAN.underline { text-decoration: underline; }
+  </style>
   <% @found.each do |element| %>
     <h2><%= "#{element.name} (#{element.category}) - #{element.os}" %></h2>
     <div style="max-width:60em; margin-left:5em;">
-      <% if !@raw %>
-        <%= link_to "Link to #{element.name} (#{element.category})", :action => 'search', :manview => {
+      <%= link_to "Link to #{element.name} (#{element.category})", :action => 'search', :manview => {
           :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %><br><br>
-        <%= element.text %> <br><br><br>
-        <%= link_to "Link to manpage source of #{element.name} (#{element.category})", :action => 'search', :manview => {
-          :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true, :raw => true } %><br><br>
-      <% else %>
-        <%= link_to "Back to manpage #{element.name} (#{element.category})", :action => 'search', :manview => {
-          :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true, :raw => false } %><br><br>
-        <pre>
-<%= CGI::escapeHTML(element.rawtext) %> <br>
-        </pre>
-      <% end %>
+      <pre>
+<%= element.text %>
+      </pre>
     </div>
   <% end %>
 <% end %>

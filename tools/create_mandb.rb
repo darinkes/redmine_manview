@@ -1,6 +1,4 @@
-require 'rubygems'
 require 'bdb'
-
 require "open3"
 
 db = BDB::Btree.create('man.db', nil, "w", 0644)
@@ -9,7 +7,7 @@ notfound = 0
 found = 0
 id = 0
 
-record = Struct.new('ManPage', :name, :fullname, :title, :category, :os, :text, :rawtext)
+record = Struct.new('ManPage', :name, :fullname, :title, :category, :os, :text)
 
 File.open("/usr/share/man/whatis.db").each { |line|
   array = line.split(/\s+-\s+/)
@@ -24,39 +22,27 @@ File.open("/usr/share/man/whatis.db").each { |line|
   data = ''
   output = ''
 
-  Open3.popen3 "/usr/bin/man -w #{category} #{pure_name}" do |stdin, stdout, stderr|
+  Open3.popen3 "man2web -s #{category} #{pure_name.downcase}" do |stdin, stdout, stderr|
     stdin.close
     output = stdout.read
   end
-  output_a = output.split(/\n/)
-  puts "for #{pure_name}(#{category}) man said: #{output_a.join(' ')}"
 
-  if !output_a.to_s.empty?
-    output_a.each do |manfile|
-      if File.exists?(manfile)
-        File.open(manfile).each { |line|
-          data += line
-        }
-      else
-        puts "#{manfile} does not exists"
-      end
-      if data.empty?
-        puts "Found #{manfile}, but it is empty"
-        notfound += 1
-      else
-        found += 1
-      end
-    end
+  output_array = output.split("\n")
+  data = String.new
+  output_array[21, output_array.size].each do | element |
+    data += element + "\n" if element !~ /^<\/pre|^<\/body|^<\/html/
   end
 
+  if output.empty?
+    puts "man2web returned empty string for #{category} #{pure_name}"
+    next
+  end
 
-  rec = record.new(pure_name, name, title, category, 'PhantomBSD', '', data)
-  db[id] = Marshal.dump(rec)
+  rec = record.new(pure_name, name, title, category, 'OpenBSD49', data)
+  db["#{id}-OpenBSD49"] = Marshal.dump(rec)
 
   id += 1
-
 }
-
 db.close
 
 puts "Total: #{id}"
