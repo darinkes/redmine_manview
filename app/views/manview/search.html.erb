@@ -20,7 +20,7 @@
   </style>
   <% @found.each do |element| %>
     <h2><%= "#{element.name} (#{element.category}) - #{element.os}" %></h2>
-    <div style="max-width:60em; margin-left:5em;">
+    <div style="margin-left:5em;">
       <%= link_to "Link to #{element.name} (#{element.category})", :action => 'search', :manview => {
           :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %><br><br>
       <pre>
