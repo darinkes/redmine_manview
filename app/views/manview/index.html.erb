@@ -14,8 +14,7 @@
 
 <% if @found %>
   <% if @multiman %>
-Found <b><%= @found.size %></b> manpages for your search-request<br>
-Choose one:<br><br>
+    <h3>Found <b><%= @found.size %></b> manpages for your search-request</h3>
     <% @found.each do |element| %>
       <%= link_to "#{element.name} (#{element.category}) - #{element.os}", :action => 'index', :manview => {
           :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %><br>
