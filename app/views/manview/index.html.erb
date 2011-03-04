@@ -1,14 +1,41 @@
 <h2>Manpage Viewer</h2>
 
-<% labelled_tabular_form_for :manview, @manview, :url => { :controller => "manview", :action => "search"}, :html => { :class => nil } do |f| %>
+<% labelled_tabular_form_for :manview, @manview, :url => { :controller => "manview", :action => "index"}, :html => { :class => nil } do |f| %>
 <div class="box tabular" style="width=100px">
   <p><%= error_messages_for 'manview' %></p>
-  <p><%= f.text_field :man_name, :required => true %></p>
+  <p><%= f.text_field :man_name, :required => true, :size => 60, :id => 'search-input', :value => h(@search) %></p>
+  <%= javascript_tag "Field.focus('search-input')" %>
   <p><%= f.select :man_category, @categories, :include_blank => false %></p>
   <p><%= f.select :man_arch, @archs, :include_blank => false %></p>
   <p><%= f.select :man_os, @os_selection, :include_blank => false %></p>
   <p><%= f.submit 'Search' %></p>
 </div>
+<% end %>
+
+<% if @found %>
+  <% if @multiman %>
+Found <b><%= @found.size %></b> manpages for your search-request<br>
+Choose one:<br><br>
+    <% @found.each do |element| %>
+      <%= link_to "#{element.name} (#{element.category}) - #{element.os}", :action => 'index', :manview => {
+          :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %><br>
+    <% end %>
+  <% else %>
+    <style type="text/css">
+        SPAN.bold { text-decoration: none; font-weight: bold }
+        SPAN.underline { text-decoration: underline; }
+    </style>
+    <% @found.each do |element| %>
+      <h3><%= "#{element.name} (#{element.category}) - #{element.os}" %></h3>
+      <table style="margin-left: auto; margin-right: auto;">
+        <tr><td>
+        <pre>
+<%= element.text %>
+        </pre>
+        </td></tr>
+      </table>
+    <% end %>
+  <% end %>
 <% end %>
 
 <% content_for :sidebar do %>

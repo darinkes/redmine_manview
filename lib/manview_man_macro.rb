@@ -9,7 +9,7 @@ module ManviewManMacro
       name = args[0].gsub(/\s+/, '')
       category = args[1].gsub(/\s+/, '')
       os = args[2].gsub(/\s+/, '')
-      return link_to "#{h name}(#{h category})", {:controller => 'manview', :action => 'search',
+      return link_to "#{h name}(#{h category})", {:controller => 'manview', :action => 'index',
                                                   :manview => {:man_name => name, :man_category => category, :strict => true, :man_os => os}
                                                  }
     end

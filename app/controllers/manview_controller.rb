@@ -17,17 +17,27 @@ class ManviewController < ApplicationController
     @archs = [ 'any', 'i386', 'AMD64']
     @cachesize = CACHE.dbsize
     @querytime = params[:querytime] || nil
+    @search = ''
+
+    if params[:manview]
+
+      @search = params[:manview][:man_name] || ''
+      category = params[:manview][:man_category] || 0
+      os = params[:manview][:man_os] || 'PhantomBSD'
+      arch = params[:manview][:man_arch] || 'any'
+      strict = params[:manview][:strict] == 'true' ? true : false
+
+      if @search != ''
+        search_man(@search, category, os, arch, strict)
+      end
+    end
+
   end
 
-  # XXX: statt eigenen view in index rendern
-  def search
-    start = Time.now
+private
 
-    search = params[:manview][:man_name]
-    category = params[:manview][:man_category]
-    os = params[:manview][:man_os]
-    arch = params[:manview][:man_arch] || 'any'
-    strict = params[:manview][:strict] == 'true' ? true : false
+  def search_man(search, category, os, arch, strict)
+    start = Time.now
 
     @found = Array.new
     cached = false
@@ -131,12 +141,10 @@ class ManviewController < ApplicationController
     db.close
   end
 
-private
-
   def add_links(text, os)
      # <span class="underline">gcc</span>(1),
       text.gsub!(/(<span class=\".+\")*([a-zA-Z0-9\._\-:\+]+)(<\/span>)*\(([0-9]+)\)/,
-        "<a href=\"search?manview[man_category]=\\4&manview[man_name]=\\2&manview[strict]=true&manview[man_os]=#{os}\">\\1\\2(\\4)\\3</a>")
+        "<a href=\"?manview[man_category]=\\4&manview[man_name]=\\2&manview[strict]=true&manview[man_os]=#{os}\">\\1\\2(\\4)\\3</a>")
       return text
   end
 
