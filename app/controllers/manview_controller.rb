@@ -58,6 +58,7 @@ class ManviewController < ApplicationController
         next if manpage.os != os && os != 'any'
         if manpage.name =~ /^#{search}$/i
           @found.push manpage
+          break
         end
       }
       if @found.empty?
