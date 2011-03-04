@@ -135,7 +135,7 @@ private
 
   def add_links(text, os)
      # <span class="underline">gcc</span>(1),
-      text.gsub!(/(<span class=\".+\")*([A-Za-z\-\.]+)(<\/span>)*\(([0-9]+)\)/,
+      text.gsub!(/(<span class=\".+\")*([A-Za-z0-9\-\.]+)(<\/span>)*\(([0-9]+)\)/,
         "<a href=\"search?manview[man_category]=\\4&manview[man_name]=\\2&manview[strict]=true&manview[man_os]=#{os}\">\\1\\2\\3(\\4)</a>")
       return text
   end
