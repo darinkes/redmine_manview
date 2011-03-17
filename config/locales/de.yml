@@ -1,0 +1,6 @@
+# German strings go here for Rails i18n
+de:
+  field_man_name: Manpage Name
+  field_man_category: Kategorie
+  field_man_os: Betriebssystem
+  field_man_arch: Architektur
