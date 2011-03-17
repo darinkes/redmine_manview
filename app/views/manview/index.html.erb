@@ -18,8 +18,8 @@
     <ul>
     <% @found.each do |element| %>
       <li>
-      <%= link_to "#{element.name} (#{element.category}) - #{element.os}", :action => 'index', :manview => {
-          :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %>
+      <%= link_to "#{element.name} (#{element.category}) - #{element.title}", :action => 'index', :manview => {
+        :man_name => element.name, :man_category => element.category, :man_os => element.os, :strict => true } %> <%= element.os %>
       </li>
     <% end %>
     </ul>
