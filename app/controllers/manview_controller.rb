@@ -91,6 +91,26 @@ private
           end
         }
       end
+      if @found.empty?
+        db.each { | entry |
+          manpage = Marshal.load(entry[1])
+          next if manpage.category != category
+          next if manpage.os != os && os != 'any'
+          if manpage.title =~ /\s*#{search}\s*/i
+            @found.push manpage
+          end
+        }
+      end
+      if @found.empty?
+        db.each { | entry |
+          manpage = Marshal.load(entry[1])
+          next if manpage.category != "#{category}/#{DEF_ARCH}"
+          next if manpage.os != os && os != 'any'
+          if manpage.title =~ /\s*#{search}\s*/i
+            @found.push manpage
+          end
+        }
+      end
     elsif (category != 'any')
       @found = Array.new
       db.each { | entry |
@@ -100,7 +120,7 @@ private
         end
         next if manpage.category != category
         next if manpage.os != os && os != 'any'
-        if manpage.fullname =~ /#{search}/i
+        if manpage.fullname =~ /#{search}/i || manpage.title =~ /\s*#{search}\s*/i
           @found.push manpage
         end
       }
@@ -112,7 +132,7 @@ private
           next if manpage.category !~ /\/#{arch}/i
         end
         next if manpage.os != os && os != 'any'
-        if manpage.fullname =~ /#{search}/i
+        if manpage.fullname =~ /#{search}/i || manpage.title =~ /\s*#{search}\s*/i
           @found.push manpage
         end
       }
@@ -157,7 +177,6 @@ private
   end
 
   def add2cache(query, result)
-    CACHE.delete(query)
     CACHE.set query, Marshal.dump(result)
   end
 
